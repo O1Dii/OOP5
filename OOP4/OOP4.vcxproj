@@ -115,17 +115,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Doctor.h" />
+    <ClInclude Include="Good.h" />
     <ClInclude Include="Helper.h" />
-    <ClInclude Include="Patient.h" />
-    <ClInclude Include="Person.h" />
+    <ClInclude Include="my_priority_queue.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Doctor.cpp" />
     <ClCompile Include="Helper.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Patient.cpp" />
-    <ClCompile Include="Person.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

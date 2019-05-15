@@ -2,30 +2,38 @@
 #include <list>
 #include <map>
 #include <fstream>
-#include "Doctor.h"
-#include "Patient.h"
+#include <queue>
+#include "Good.h"
 #include "Helper.h"
 
 using namespace std;
 
+/*
+	priority_queue
+	Учёт товаров в аптеке
+
+	Название товара
+	Страна производства
+	Фирма производитель
+	Количество на складе
+	Цена
+	Форма
+
+*/
+
 
 void menu(int & choice) {
-	cout << "1. Добавить врача" << endl;
-	cout << "2. Изменить врача" << endl;
-	cout << "3. Просмотр всех врачей" << endl;
-	cout << "4. Удаление врача" << endl;
-	cout << "5. Добавить пациента" << endl;
-	cout << "6. Изменить пациента" << endl;
-	cout << "7. Просмотр пациентов" << endl;
-	cout << "8. Удаление пациента" << endl;
-	cout << "9. Сортировка врачей" << endl;
-	cout << "10. Поиск пациента" << endl;
-	cout << "11. Выход" << endl;
+	cout << "1. Добавить товар" << endl;
+	cout << "2. Изменить товар" << endl;
+	cout << "3. Просмотр всех товаров" << endl;
+	cout << "4. Удаление товара" << endl;
+	cout << "5. Поиск товара" << endl;
+	cout << "6. Выход" << endl;
 	do {
 		cin.clear();
 		cin.ignore(cin.rdbuf()->in_avail());
 		cin >> choice;
-	} while (!cin.good() && (choice < 1 || choice > 11));
+	} while (!cin.good() && (choice < 1 || choice > 6));
 }
 
 int main() {
@@ -33,27 +41,15 @@ int main() {
 	SetConsoleOutputCP(1251);
 
 	int choice, choice2, patIndex = 0;
-	list<Doctor> doctors;
-	map<int, Patient> patients;
-	pair<int, Patient> pair;
+	my_priority_queue<Good> goods;
 	fstream f;
-	Patient pat;
-	Doctor doc;
+	Good item;
 
-	f.open("Users.txt", fstream::app || fstream::in);
-	//f.open("Users.txt", fstream::out);
-	int i = 0;
-	while (f.peek() != EOF) {
-		f.read((char*)&pat, sizeof(Patient));
-		patients.insert({ i, pat });
-		i++;
-	}
-	f.close();
-	f.open("Doctors.txt", fstream::app || fstream::in);
+	f.open("Goods.txt", fstream::app || fstream::in);
 	//f.open("Doctors.txt", fstream::out);
 	while (f.peek() != EOF) {
-		f.read((char*)&doc, sizeof(Doctor));
-		doctors.push_back(doc);
+		f.read((char*)&item, sizeof(Good));
+		goods.push(item);
 	}
 	f.close();
 	do {
@@ -62,61 +58,48 @@ int main() {
 		menu(choice);
 		switch (choice) {
 		case 1: 
-			doctors.push_back(Helper::input<Doctor>());
-			break;	
+		{
+			item = Good();
+			item = Helper::input(item);
+			if (item.getName()[0] != '\0') {
+				Helper::writeFile(item);
+				goods.push(item);
+			}
+			break;
+		}
 		case 2: 
-			doc = Helper::outputDoctors(doctors);
-			if (doc.getEmail() != "\0") {
-				Helper::menu_edit<Doctor>(choice2);
-				doctors.remove(doc);
-				doctors.push_back(Helper::input<Doctor>(&doc, choice2));
+			item = Helper::outputDoctors(goods);
+			if (item.getName()[0] != '\0') {
+				Helper::menu_edit<Good>(choice2);
+				Good doc2 = item;
+				item = Helper::input(item, choice2);
+				if (item.getName()[0] != '\0') {
+					Helper::del(doc2);
+					goods.remove(doc2);
+					Helper::writeFile(item);
+					goods.push(item);
+				}
 			}
 			break;
 		case 3:
-			doc = Helper::outputDoctors(doctors);
-			if (doc.getEmail() != "\0") {
-				cout << doc << endl;
+			item = Helper::outputDoctors(goods);
+			if (item.getName()[0] != '\0') {
+				cout << item << endl;
 			}
 			break;
 		case 4: {
-			doc = Helper::outputDoctors(doctors);
-			if (doc.getEmail() != "\0") {
-				doctors.remove(doc);
+			item = Helper::outputDoctors(goods);
+			if (item.getName()[0] != '\0') {
+				Helper::del(item);
+				goods.remove(item);
 			}
 			break;
 		}
 		case 5:
-			patients.insert({ patIndex, Helper::input<Patient>() });
-			patIndex++;
-			break;
-		case 6:
-			pair = Helper::outputPatients(patients);
-			if (pair.second.getEmail() != "\0") {
-				Helper::menu_edit<Patient>(choice2);
-				patients.erase(pair.first);
-				patients.insert({ pair.first, Helper::input<Patient>(&pair.second, choice2) });
-			}
-			break;
-		case 7:
-			pair = Helper::outputPatients(patients);
-			if (pair.second.getEmail() != "\0") {
-				cout << pair.second << endl;
-			}
-			break;
-		case 8:
-			pair = Helper::outputPatients(patients);
-			if (pair.second.getEmail() != "\0") {
-				patients.erase(pair.first);
-			}
-			break;
-		case 9:
-			Helper::sort(doctors);
-			break;
-		case 10:
-			Helper::search(patients);
+			Helper::search(goods);
 			break;
 		default:
 			break;
 		}
-	} while (choice != 11);
+	} while (choice != 6);
 }

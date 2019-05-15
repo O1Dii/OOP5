@@ -8,477 +8,299 @@
 #include <fstream>
 #include <conio.h>
 #include <Windows.h>
-#include "Doctor.h"
-#include "Patient.h"
+#include "Good.h"
+#include "my_priority_queue.h"
 
 using namespace std;
 
 
 class Helper
 {
-private:
-	template <class T>
-	static void helper(T * person, int field = 0);
 public:
 	template <class T>
 	static bool del(T);
 	template <class T>
 	static void menu_edit(int & choice);
+	static Good input(Good & good, int field = 0);
 	template <class T>
-	static T input(T * person = nullptr, int field = 0);
-	template <class T>
-	static void writeFile(T & person);
-	static Doctor outputDoctors(list<Doctor> doctors);
-	static pair<int, Patient> outputPatients(map<int, Patient> patients);
-	static void sort(list<Doctor> & doctors);
-	static void search(map<int, Patient> & patients);
+	static void writeFile(T & Good);
+	static Good outputDoctors(my_priority_queue<Good> goods);
+	//static void sort(my_priority_queue<Good> & goods);
+	static void search(my_priority_queue<Good> & goods);
 };
 
 
-inline void Helper::sort(list<Doctor> & doctors) {
-	list<Doctor>::iterator i, j, temp;
-	auto begin = doctors.begin(), end = doctors.end();
-	char tempI[20], tempJ[20];
-	if (begin != end) {
-		for (i = begin; i != end; i++) {
-			strcpy_s(tempI, 20, i->getName());
-			temp = i;
-			for (j = i; j != end; j++) {
-				strcpy_s(tempJ, 20, j->getName());
-				if (strcmp(tempI, tempJ) > 0) {
-					strcpy_s(tempI, 20, tempJ);
-					temp = j;
-				}
-			}
-			iter_swap(i, temp);
-		}
-	}
-}
-
-inline void Helper::search(map<int, Patient> & patients) {
-	cout << "Введите нужную фамилию" << endl;
+inline void Helper::search(my_priority_queue<Good> & goods) {
+	cout << "Введите нужное лекарство" << endl;
 	string str;
 	cin >> str;
-	map<int, Patient> temp;
-	for (auto & pat : patients) {
-		if (pat.second.getSecName() == str)
-			temp.insert({ pat.first, pat.second });
+	bool flag = false;
+	for (auto & item : goods) {
+		if (!strcmp(item.getName(), str.c_str())) {
+			if (flag) {
+				cout << "--------------------------" << endl;
+			}
+			cout << item << endl;
+			flag = true;
+		}
 	}
-	auto output = Helper::outputPatients(temp);
-	if (output.second.getEmail()[0] != '\0')
-		cout << output.second;
+	if (!flag) {
+		cout << "Нет таких лекарств" << endl;
+	}
 }
 
 
 template<class T>
-inline void Helper::writeFile(T & person)
+inline void Helper::writeFile(T & item)
 {
 	ofstream f;
-	if (is_same<T, Doctor>::value) {
-		f.open("Doctors.txt", ofstream::app);
+	if (is_same<T, Good>::value) {
+		f.open("Goods.txt", ofstream::app);
 	}
-	else if (is_same<T, Patient>::value) {
-		f.open("Users.txt", ofstream::app);
-	}
-
-	//cout << '\n' << E << " " << P << " " << Tel << " " << N << " " << SN << " " << Pat << " " << Addr << " " << atoi(num.c_str()) << " " << atoi(korp.c_str()) << " " << atoi(kv.c_str()) << endl;
 	if (f.is_open()) {
-		f.write((char*)&person, sizeof(T));
+		f.write((char*)&item, sizeof(T));
 		f.close();
 	}
 }
 
 
-template<>
-inline Doctor Helper::input<Doctor>(Doctor * person, int field) {
-	Doctor doc;
-	if (person != nullptr)
-		doc = *person;
-	if (field != 0) {
-		Helper::del<Doctor>(doc);
-	}
-	Helper::helper(&doc, field);
-	if (doc.getEmail() != "\0") {
-		string str;
-		if (field == 0 || field == 11) {
-			cout << "\nВведите описание" << endl;
-			cin >> str;
-			doc.setDescription(str);
-		}
-		Helper::writeFile<Doctor>(doc);
-	}
-	return doc;
-}
-
-template<>
-inline Patient Helper::input<Patient>(Patient * person, int field) {
-	Patient pat;
-	if (person != nullptr)
-		pat = *person; 
-	if (field != 0) {
-		Helper::del<Patient>(pat);
-	}
-	Helper::helper(&pat, field);
-	if (pat.getEmail() != "\0") {
-		string str;
-		if (field == 0 || field == 11) {
-			cout << "\nВведите болезнь" << endl;
-			cin >> str;
-			pat.setIssue(str);
-		}
-		if (field == 0 || field == 12) {
-			cout << "\nВведите текущее состояние" << endl;
-			cin >> str;
-			pat.setCurrentState(str);
-		}
-		Helper::writeFile<Patient>(pat);
-	}
-	return pat;
-}
-
-template<class T>
-inline void Helper::helper(T * per, int field)
+inline Good Helper::input(Good & good, int field)
 {
-	string output;
-	char ch = 0, E[50], P[50], Tel[20], N[20], SN[20], Pat[20], Addr[50];
-	string mask = "@mail.ru";
-	string mask_t = "+375(**)***-**-**";
-	string email;
-	string password;
-	string Name;
-	string SecName;
-	string Patronumic;
-	string addr;
-	string num;
-	string korp = "0";
-	string kv;
-	strcpy_s(E, 50, per->getEmail());
-	strcpy_s(P, 50, per->getPassword());
-	strcpy_s(N, 20, per->getName());
-	strcpy_s(SN, 20, per->getSecName());
-	strcpy_s(Pat, 20, per->getPatronymic());
-	strcpy_s(Tel, 20, per->getTel());
-	strcpy_s(Addr, 50, per->getAddr().addr);
-	num = to_string(per->getAddr().num);
-	korp = to_string(per->getAddr().korpus);
-	kv = to_string(per->getAddr().kv);
-	bool dot = false, flag = true;
+	char ch = 0, N[50], MC[50], MN[50], S[20];
+	int A;
+	float P;
+	string output, name, manufCountry, manufName, shape, amount, price;
+	strcpy_s(N, 50, good.getName());
+	strcpy_s(MC, 50, good.getManufCountry());
+	strcpy_s(MN, 50, good.getManufName());
+	A = good.getAmount();
+	P = good.getPrice();
+	strcpy_s(S, 20, good.getShape());
 	ifstream f1;
 	int format = 0, i = 0, format_pos = 50;
 	switch (field) {
 	case 0:
-	case 1: {
-		output += "Введите Email";
+	case 1:
+	{
+		output += "Введите название лекарства(на русском)";
 		system("cls");
-		cout << output;
-		while (email.empty()) {
-			ch = 0;
-			while (ch != 13) {
-				SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), { (short)i, 1 });
-				ch = _getch();
-				if (ch == '\b' && !email.empty()) {
-					if (format == 1)
-						format = 0;
-					else if (format == 1) {
-						if (email[email.length() - 1] == '@')
-							format = 0;
-					}
-					else if (format == 2) {
-						if (email[email.length() - 2] == '@')
-							format = 1;
-					}
-					else if (format == 3) {
-						if (email[email.length() - 1] == '.') {
-							dot = false;
-							format = 2;
-						}
-					}
-					i--;
-					email.pop_back();
-				}
-				if ((ch >= 'A' && ch <= 'Z') || (ch == '_') || (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9')) {
-					email += ch;
-					i++;
-				}
-				else if (ch == '@') {
-					email += ch;
-					i++;
-					format = 1;
-					format_pos = i;
-				}
-				if (i > format_pos) {
-					if (format != 3 && format != 2)
-						format = 2;
-					if (ch == '.') {
-						if (dot == false) {
-							format = 3;
-							email += ch;
-							i++;
-							dot = true;
-						}
-						else
-							continue;
-					}
-				}
+		cout << output << endl;
+		output += '\n';
+		ch = 0;
+		while (ch != 13) {
+			ch = _getch();
+			if (ch == '\b' && !name.empty()) {
+				name.pop_back();
 				system("cls");
-				cout << output << endl;
-				cout << email;
-				if (format == 0)
-					cout << mask;
-				if (format == 1)
-					cout << "mail.ru";
-				if (format == 2)
-					cout << ".ru";
+				output.pop_back();
+				cout << output;
+			}
+			if (ch >= 'А' && ch <= 'Я') {
+				ch += 32;
+				name += ch;
+				output += ch;
+				cout << ch;
+			}
+			else if (ch >= 'а' && ch <= 'я') {
+				name += ch;
+				output += ch;
+				cout << ch;
 			}
 		}
-		if (format == 0) {
-			email.append("@mail.ru");
-		}
-		else if (format == 1) {
-			email.append("mail.ru");
-		}
-		else if (format == 2) {
-			email.append(".ru");
-		}
-		output += '\n';
-		output += email;
-		output += '\n';
-		Patient pat;
-		Doctor doc;
-		f1.open("Users.txt");
+		system("cls");		
+		cout << output << endl;
+	}
+	strcpy_s(N, 50, name.c_str());
+	if (field != 0) {
+		bool flag = true;
+		Good item;
+		f1.open("Goods.txt");
 		while (f1.peek() != EOF) {
-			f1.read((char*)&pat, sizeof(Patient));
-			if (!strcmp(pat.getEmail(), email.c_str())) {
-				flag = false;
-			}
-		}
-		f1.close();
-		f1.open("Doctors.txt");
-		while (f1.peek() != EOF) {
-			f1.read((char*)&doc, sizeof(Doctor));
-			if (!strcmp(doc.getEmail(), email.c_str())) {
+			f1.read((char*)&item, sizeof(Good));
+			if (!strcmp(item.getName(), name.c_str()) && !strcmp(item.getManufName(), MN)) {
 				flag = false;
 			}
 		}
 		f1.close();
 		if (flag == false) {
-			cout << "Такой пользователь уже существует" << endl;
-			system("pause");
-			return;
+			cout << "Такой товар уже существует" << endl;
+			return Good();
 		}
-		//if (!doctor_email.empty()) {
-		//	class Console cons;
-		//	system("cls");
-		//	int choice = 2;
-		//	do {
-		//		if (admin == false) {
-		//			choice = cons.Set_menu("  Хотите стать лечащим врачом для данного пациента?\n  Да\n  Нет");
-		//			if (choice == 2)
-		//				change_doc = true;
-		//			else if (choice == 3)
-		//				change_doc = false;
-		//		}
-		//		else
-		//			change_doc = true;
-		//	} while (choice == 1);
-		//	if (flag == false)
-		//		break;
-		//}
-		//else {
-		//	if (flag == false) {
-		//		cout << "\nТакой пользователь уже существует" << endl;
-		//		system("pause");
-		//		break;
-		//	}
-		//}
-		if (field != 0) {
-			strcpy_s(E, 50, email.c_str());
-			break;
-		}
-		strcpy_s(E, 50, email.c_str());
-	}
+		break;
+	}	
+	output += '\n';
 	case 2:
-		output += "Введите пароль";
+	{
+		output += "Введите страну производителя";
 		system("cls");
 		cout << output << endl;
 		output += '\n';
 		ch = 0;
 		while (ch != 13) {
 			ch = _getch();
-			if (ch == '\b' && !password.empty()) {
-				password.pop_back();
+			if (ch == '\b' && !manufCountry.empty()) {
+				manufCountry.pop_back();
 				system("cls");
 				output.pop_back();
 				cout << output;
 			}
-			if (ch >= 'A' && ch <= 'Z' || ch >= 'a' && ch <= 'z' || ch == '_' || ch >= '0' && ch <= '9') {
-				password += ch;
-				cout << ch;
+			if (ch >= 'А' && ch <= 'Я') {
+				ch += 32;
+				manufCountry += ch;
 				output += ch;
+				cout << ch;
+			}
+			else if (ch >= 'а' && ch <= 'я') {
+				manufCountry += ch;
+				output += ch;
+				cout << ch;
 			}
 		}
-		system("cls");
+		system("cls");	
 		cout << output << endl;
-		strcpy_s(P, 50, password.c_str());
+		strcpy_s(MC, 50, manufCountry.c_str());
 		if (field != 0) {
 			break;
-		}
+		}	
 		output += '\n';
+	}
 	case 3:
 	{
-		output += "Введите имя(на русском)";
+		output += "Введите название компании производителя";
 		system("cls");
 		cout << output << endl;
 		output += '\n';
 		ch = 0;
 		while (ch != 13) {
 			ch = _getch();
-			if (ch == '\b' && !Name.empty()) {
-				Name.pop_back();
+			if (ch == '\b' && !manufName.empty()) {
+				manufName.pop_back();
 				system("cls");
 				output.pop_back();
 				cout << output;
 			}
 			if (ch >= 'А' && ch <= 'Я') {
 				ch += 32;
-				Name += ch;
+				manufName += ch;
 				output += ch;
 				cout << ch;
 			}
 			else if (ch >= 'а' && ch <= 'я') {
-				Name += ch;
+				manufName += ch;
 				output += ch;
 				cout << ch;
 			}
 		}
-		system("cls");
+		system("cls");		
 		cout << output << endl;
+
+		bool flag = true;
+		Good item;
+		f1.open("Goods.txt");
+		while (f1.peek() != EOF) {
+			f1.read((char*)&item, sizeof(Good));
+			if (!strcmp(item.getName(), N) && !strcmp(item.getManufName(), manufName.c_str())) {
+				flag = false;
+			}
+		}
+		f1.close();
+		if (flag == false) {
+			cout << "Такой товар уже существует" << endl;
+			return Good();
+		}
+
+		strcpy_s(MN, 50, manufName.c_str());
+		if (field != 0) {
+			break;
+		}		
+		output += '\n';
 	}
-	strcpy_s(N, 20, Name.c_str());
-	if (field != 0) {
-		break;
-	}
-	output += '\n';
 	case 4:
 	{
-		output += "Введите фамилию";
+		output += "Введите количество продуктов на складе";
 		system("cls");
 		cout << output << endl;
-		output += '\n';
-		ch = 0;
-		while (ch != 13) {
-			ch = _getch();
-			if (ch == '\b' && !SecName.empty()) {
-				SecName.pop_back();
-				system("cls");
-				output.pop_back();
-				cout << output;
-			}
-			if (ch >= 'А' && ch <= 'Я') {
-				ch += 32;
-				SecName += ch;
-				output += ch;
-				cout << ch;
-			}
-			else if (ch >= 'а' && ch <= 'я') {
-				SecName += ch;
-				output += ch;
-				cout << ch;
+		cin.clear();
+		cin.ignore(cin.rdbuf()->in_avail());
+		amount.clear();
+		while (amount.length() == 0) {
+			ch = 0;
+			while (ch != 13) {
+				ch = _getch();
+				if (ch == '\b' && amount.length() != 0) {
+					amount.pop_back();
+					system("cls");
+					cout << output << endl;
+					cout << amount;
+				}
+				if (ch >= '0' && ch <= '9' && amount.length() <= 2) {
+					amount += ch;
+					cout << ch;
+				}
 			}
 		}
-		system("cls");
-		cout << output << endl;
-		strcpy_s(SN, 20, SecName.c_str());
+		output += '\n';
+		output += amount;
+		output += '\n';
+		cout << endl;
+		A = atoi(amount.c_str());
 		if (field != 0) {
 			break;
 		}
-		output += '\n';
 	}
 	case 5:
 	{
-		output += "Введите отчество";
+		output += "Введите цену товара";
 		system("cls");
 		cout << output << endl;
-		output += '\n';
-		ch = 0;
-		while (ch != 13) {
-			ch = _getch();
-			if (ch == '\b' && !Patronumic.empty()) {
-				Patronumic.pop_back();
-				system("cls");
-				output.pop_back();
-				cout << output;
-			}
-			if (ch >= 'А' && ch <= 'Я') {
-				ch += 32;
-				Patronumic += ch;
-				output += ch;
-				cout << ch;
-			}
-			else if (ch >= 'а' && ch <= 'я') {
-				Patronumic += ch;
-				output += ch;
-				cout << ch;
+		cin.clear();
+		cin.ignore(cin.rdbuf()->in_avail());
+		price.clear();
+		bool flag = true;
+		int sep = 0;
+		while (price.length() == 0) {
+			ch = 0;
+			while (ch != 13) {
+				ch = _getch();
+				if (ch == '\b' && price.length() != 0) {
+					if (price.length() == sep) {
+						flag = true;
+					}
+					price.pop_back();
+					system("cls");
+					cout << output << endl;
+					cout << price;
+				}
+				if (ch >= '0' && ch <= '9' && price.length() <= 5 && price.length() - sep <= 2) {
+					price += ch;
+					cout << ch;
+				}
+				if (ch == '.' && flag) {
+					price += ch;
+					cout << ch;
+					flag = false;
+					sep = price.length();
+				}
 			}
 		}
-		system("cls");
-		cout << output << endl;
-		strcpy_s(Pat, 20, Patronumic.c_str());
+		output += '\n';
+		output += price;
+		output += '\n';
+		cout << endl;
+		P = round((float)atof(price.c_str()) * 100) / 100;
 		if (field != 0) {
 			break;
 		}
-		output += '\n';
 	}
 	case 6:
 	{
-		output += "Введите свой мобильный телефон";
-		system("cls");
-		cout << output << endl;
-		int length = 0;
-		int pospos = 0;
-		int posarrays[10] = { 5,6,8,9,10,12,13,15,16 };
-		int pos = posarrays[pospos];
-		cout << mask_t;
-		ch = 0;
-		while (length != 9 && ch != 13) {
-			ch = _getch();
-			if (ch == '\b' && length != 0) {
-				length--;
-				pospos--;
-				pos = posarrays[pospos];
-				mask_t[pos] = '*';
-				system("cls");
-				cout << output << endl;
-				cout << mask_t;
-			}
-			if (ch >= '0' && ch <= '9') {
-				length++;
-				mask_t[pos] = ch;
-				pospos++;
-				pos = posarrays[pospos];
-				system("cls");
-				cout << output << endl;
-				cout << mask_t;
-			}
-		}
-		strcpy_s(Tel, 20, mask_t.c_str());
-		if (field != 0) {
-			break;
-		}
-		output += '\n';
-		output += mask_t;
-		output += '\n';
-	}
-	case 7:
-	{
 		short int pos = 0;
-		vector<string> vect = { "улица", "проспект", "переулок", "тракт", "проезд" };
-		string temp_str = vect[0];
-		output += "Введите адрес(Например: улица Космонавтов)";
+		vector<string> vect = { "таблетки", "спреи", "свечи", "конфеты", "пластерь" };
+		shape = vect[0];
+		output += "Выберите форму\n";
 		system("cls");
-		cout << output << endl;
-		output += '\n';
-		cout << temp_str << " ";
+		cout << output;
+		cout << shape;
 		ch = 0;
 		while (ch != 13) {
 			ch = _getch();
@@ -488,146 +310,46 @@ inline void Helper::helper(T * per, int field)
 					pos--;
 					if (pos < 0)
 						pos = (short)vect.size() - 1;
-					temp_str = vect[pos];
+					shape = vect[pos];
 					system("cls");
 					cout << output;
-					cout << temp_str;
-					cout << " " << addr;
+					cout << shape;
 				}
 				else if (ch == 77) {
 					pos++;
 					if (pos > (short)vect.size() - 1)
 						pos = 0;
-					temp_str = vect[pos];
+					shape = vect[pos];
 					system("cls");
 					cout << output;
-					cout << temp_str;
-					cout << " " << addr;
+					cout << shape;
 				}
 				else if (ch == '\0')
 					ch = 'а';
 			}
-			if (ch == '\b' && !addr.empty()) {
-				addr.pop_back();
-				system("cls");
-				cout << output;
-				cout << temp_str << " " << addr;
-			}
-			if (ch >= 'А' && ch <= 'Я') {
-				ch += 32;
-				addr += ch;
-				cout << ch;
-			}
-			else if (ch >= 'а' && ch <= 'я') {
-				addr += ch;
-				cout << ch;
-			}
 		}
-		temp_str += " ";
-		temp_str += addr;
-		strcpy_s(Addr, 50, temp_str.c_str());
+		output += '\n';
+		output += shape;
+		output += '\n';
+		cout << endl;
+		strcpy_s(S, 20, shape.c_str());
 		if (field != 0) {
 			break;
 		}
-		output += temp_str;
-		output += '\n';
 	}
-	case 8:
-		output += "Введите номер дома";
-		system("cls");
-		cout << output << endl;
-		cin.clear();
-		cin.ignore(cin.rdbuf()->in_avail());
-		num.clear();
-		while (num.length() == 0) {
-			ch = 0;
-			while (ch != 13) {
-				ch = _getch();
-				if (ch == '\b' && num.length() != 0) {
-					num.pop_back();
-					system("cls");
-					cout << output << endl;
-					cout << num;
-				}
-				if (ch >= '0' && ch <= '9' && num.length() <= 2) {
-					num += ch;
-					cout << ch;
-				}
-			}
-		}
-		if (field != 0) {
-			break;
-		}
-	case 9:
-		output += '\n';
-		output += num;
-		output += '\n';
-		output += "Введите номер корпуса(оставьте пустым, если корпуса нет)";
-		system("cls");
-		cout << output << endl;
-		ch = 0;
-		while (ch != 13) {
-			ch = _getch();
-			if (ch == '\b' && korp.length() != 1) {
-				korp.pop_back();
-				system("cls");
-				cout << output << endl;
-				for (int i = 1; i < (int)korp.length(); i++)
-					cout << korp[i];
-			}
-			if (ch >= '0' && ch <= '9' && korp.length() <= 2) {
-				korp += ch;
-				cout << ch;
-			}
-		}
-		if (field != 0) {
-			break;
-		}
-	case 10:
-		output += '\n';
-		if (korp != "0")
-			output += korp;
-		output += '\n';
-		output += "Введите номер квартиры";
-		system("cls");
-		cout << output << endl;
-		cin.clear();
-		cin.ignore(cin.rdbuf()->in_avail());
-		kv.clear();
-		while (kv.length() == 0) {
-			ch = 0;
-			while (ch != 13) {
-				ch = _getch();
-				if (ch == '\b' && kv.length() != 0) {
-					kv.pop_back();
-					system("cls");
-					cout << output << endl;
-					cout << kv;
-				}
-				if (ch >= '0' && ch <= '9' && kv.length() <= 2) {
-					kv += ch;
-					cout << ch;
-				}
-			}
-		}
-		if (field != 0) {
-			break;
-		}
 	default:
 		break;
 	}
 
-	per->setValues(*E, *P, *Tel, *N, *SN, *Pat, *Addr, atoi(num.c_str()), atoi(korp.c_str()), atoi(kv.c_str()));
+	good.setValues(*N, *MC, *MN, A, P, *S);
+	return good;
 }
 
 template <class T>
 inline bool Helper::del(T ob)
 {
-	string file = "Users.txt";
+	string file = "Goods.txt";
 	fstream f;
-	if (is_same<T, Doctor>::value) {
-		file = "Doctors.txt";
-	}
 	f.open(file, fstream::in || fstream::app);
 	T man;
 	deque<T> d;
@@ -655,28 +377,13 @@ inline bool Helper::del(T ob)
 template<class T>
 inline void Helper::menu_edit(int & choice)
 {
-	int user = true;
-	cout << "1. Email" << endl;
-	cout << "2. Пароль" << endl;
-	cout << "3. Имя" << endl;
-	cout << "4. Фамилия" << endl;
-	cout << "5. Отчество" << endl;
-	cout << "6. Мобильный телефон" << endl;
-	cout << "7. Адрес" << endl;
-	cout << "8. Номер дома" << endl;
-	cout << "9. Номер корпуса" << endl;
-	cout << "10. Номер квартиры" << endl;
-	if (is_same<T, Doctor>::value) {
-		cout << "11. Описание" << endl;
-		cout << "12. Выход" << endl;
-		user = false;
-	}
-	else {
-		cout << "11. Болезнь" << endl;
-		cout << "12. Текущее состояние" << endl;
-		cout << "13. Выход" << endl;
-	}	
+	cout << "1. Название" << endl;
+	cout << "2. Страну производителя" << endl;
+	cout << "3. Название компании производителя" << endl;
+	cout << "4. Количество на складе" << endl;
+	cout << "5. Цена за единицу продукци" << endl;
+	cout << "6. Форма" << endl;
 	do {
 		cin >> choice;
-	} while (!cin.good() && (choice < 1 || choice > user ? 13 : 12));
+	} while (!cin.good() && (choice < 1 || choice > 6));
 }
